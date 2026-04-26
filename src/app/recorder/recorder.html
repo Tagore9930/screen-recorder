@@ -1,7 +1,5 @@
-<h2>Recorder {{isRecording}} </h2>
-
 <div class="main-screen">
-    <div class="btns-section">
+    <div class="primary-btns">
         <button mat-icon-button (click)="record(!isRecording)">
             <span class="material-symbols-outlined">
                 {{isRecording ? 'stop' : 'screen_record'}}
@@ -14,20 +12,32 @@
             </span>
         </button>
         }
+    </div>
+    @if (!isRecording) {
+    <div class="secondary-btns">
         <button matIconButton color="warn" (click)="isAudio = !isAudio" [class.off]="!isAudio">
             <span class="material-symbols-outlined">
                 {{isAudio ? 'mic' : 'mic_off'}}
             </span>
         </button>
         <button matIconButton>
+            <span class="material-symbols-outlined">volume_up</span>
+        </button>
+        <button matIconButton>
+            <span class="material-symbols-outlined">desktop_windows</span>
+        </button>
+        <button matIconButton>
+            <span class="material-symbols-outlined">folder</span>
+        </button>
+        <button matIconButton>
             <span class="material-symbols-outlined">settings</span>
         </button>
     </div>
+    }
 </div>
 
 
 <!-- 🎥 Video Preview -->
-<h2>Recorded: {{videoUrl}}</h2>
 @if (videoUrl) {
 <div style="margin-top: 20px;">
     <video [src]="videoUrl" controls autoplay style="width: 100%; max-width: 600px; border-radius: 8px;">

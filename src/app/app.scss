@@ -1,0 +1,36 @@
+.app-header {
+    -webkit-app-region: drag; // 👈 THIS makes it draggable
+    height: 40px;
+    // background: #222;
+    // color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid gray;
+}
+
+.window-buttons button {
+    -webkit-app-region: no-drag; // Buttons should NOT be draggable
+    margin-left: 5px;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+    padding: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    .material-symbols-outlined {
+        font-size: 18px;
+        color: #4B515A;
+    }
+
+    &.minimize-btn {
+        .material-symbols-outlined {
+            font-size: 22px;
+            top: -5px;
+            position: relative;
+        }
+    }
+}

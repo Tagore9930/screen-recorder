@@ -1,6 +1,27 @@
 .main-screen {
+    display: flex;
+    align-items: center;
+
+    .primary-btns {
+        display: inline-flex;
+        border-right: 1px solid lightgray;
+    }
+
+
+
+
     .off {
         color: white;
         background: red;
+    }
+
+    button {
+        margin-top: 10px;
+        width: 55px;
+        height: 55px;
+
+        .material-symbols-outlined {
+            font-size: 30px;
+        }
     }
 }

@@ -1,2 +1,15 @@
-<h1>Hello World</h1>
-<router-outlet></router-outlet>
+<div class="app">
+    <div class="app-header">
+        <span>Recorder App</span>
+
+        <div class="window-buttons">
+            <button matIconButton (click)="minimize()" class="minimize-btn">
+                <span class="material-symbols-outlined">minimize</span>
+            </button>
+            <button matIconButton (click)="close()">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+    </div>
+    <router-outlet></router-outlet>
+</div>
