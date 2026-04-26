@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, NgZone } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -9,8 +9,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   templateUrl: './recorder.html',
   styleUrl: './recorder.scss',
 })
-export class Recorder {
-  public isAudio: boolean = true;
+export class Recorder implements OnInit {
+  public isAudio: boolean = false;
   public isVideo: boolean = false;
 
   // Streams
@@ -39,21 +39,19 @@ export class Recorder {
     private zone: NgZone,
   ) {}
 
+  ngOnInit(): void {
+    this.isAudio && this.onToggleMic(true);
+  }
+
   public async record(isStart: boolean) {
     if (isStart) {
+      this.isRecording = true;
+      this.startTimer();
+
       if (!this.screenStream) {
         await this.getScreenStream();
 
         if (!this.screenStream) {
-          console.log('The userStream is empty.');
-          return;
-        }
-      }
-
-      if (this.isAudio || this.isVideo) {
-        await this.getUserStream();
-
-        if (!this.userStream) {
           console.log('The userStream is empty.');
           return;
         }
@@ -77,47 +75,57 @@ export class Recorder {
       this.recordedChunks = [];
       this.mediaRecorder = new MediaRecorder(combinedStream);
 
-      this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
-        this.zone.run(() => {
-          if (event.data.size > 0) {
-            this.recordedChunks.push(event.data);
+      this.mediaRecorder.ondataavailable = this.onMediaRecDataAvailable;
 
-            // ✅ Update size
-            this.totalSize += event.data.size;
-            this.recordingSize = this.formatBytes(this.totalSize);
-
-            this.cd.detectChanges();
-          }
-        });
-      };
-
-      this.mediaRecorder.onstop = () => {
-        this.zone.run(() => {
-          const blob = new Blob(this.recordedChunks, {
-            type: 'video/webm',
-          });
-
-          this.stopAll();
-
-          // 👇 create preview URL
-          this.videoUrl = URL.createObjectURL(blob);
-          // setTimeout(() => {
-          // this.isRecording = false;
-          // });
-        });
-      };
-
-      this.zone.run(() => {
-        this.isRecording = true;
-        this.mediaRecorder.start(1000);
-        this.startTimer();
-      });
+      this.mediaRecorder.onstop = this.onMediaRecStop;
+      this.mediaRecorder.start(600);
     }
 
     if (!isStart) {
       if (this.mediaRecorder && this.isRecording) {
         this.stopAll();
         this.isRecording = false;
+      }
+    }
+  }
+
+  private onMediaRecDataAvailable = (event: BlobEvent) => {
+    this.zone.run(() => {
+      if (event.data.size > 0) {
+        this.recordedChunks.push(event.data);
+
+        // ✅ Update size
+        this.totalSize += event.data.size;
+        this.recordingSize = this.formatBytes(this.totalSize);
+
+        this.cd.detectChanges();
+      }
+    });
+  };
+
+  private onMediaRecStop = () => {
+    this.zone.run(() => {
+      const blob = new Blob(this.recordedChunks, {
+        type: 'video/webm',
+      });
+
+      this.stopAll();
+
+      // 👇 create preview URL
+      this.videoUrl = URL.createObjectURL(blob);
+
+      this.cd.detectChanges();
+    });
+  };
+
+  public async onToggleMic(isInitial: boolean = false) {
+    !isInitial && (this.isAudio = !this.isAudio);
+
+    if (this.isAudio || this.isVideo) {
+      await this.getUserStream();
+
+      if (!this.userStream) {
+        console.log('The userStream is empty.');
       }
     }
   }
@@ -171,6 +179,8 @@ export class Recorder {
     // Video Size
     this.recordingSize = '0 MB';
     this.totalSize = 0;
+
+    this.cd.detectChanges();
   }
 
   // Get Streams methods

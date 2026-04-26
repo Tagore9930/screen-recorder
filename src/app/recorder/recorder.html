@@ -15,7 +15,7 @@
     </div>
     @if (!isRecording) {
     <div class="secondary-btns">
-        <button matIconButton color="warn" (click)="isAudio = !isAudio" [class.off]="!isAudio">
+        <button matIconButton color="warn" (click)="onToggleMic()" [class.off]="!isAudio">
             <span class="material-symbols-outlined">
                 {{isAudio ? 'mic' : 'mic_off'}}
             </span>
