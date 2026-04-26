@@ -20,18 +20,33 @@
                 {{isAudio ? 'mic' : 'mic_off'}}
             </span>
         </button>
-        <button matIconButton>
-            <span class="material-symbols-outlined">volume_up</span>
-        </button>
-        <button matIconButton>
-            <span class="material-symbols-outlined">desktop_windows</span>
-        </button>
-        <button matIconButton>
-            <span class="material-symbols-outlined">folder</span>
-        </button>
-        <button matIconButton>
-            <span class="material-symbols-outlined">settings</span>
-        </button>
+        <span matTooltip="This feature will coming soon.">
+            <button matIconButton [disabled]="true">
+                <span class="material-symbols-outlined">volume_up</span>
+            </button>
+        </span>
+        <span matTooltip="This feature will coming soon.">
+            <button matIconButton [disabled]="true">
+                <span class="material-symbols-outlined">desktop_windows</span>
+            </button>
+        </span>
+        <span matTooltip="This feature will coming soon.">
+            <button matIconButton [disabled]="true">
+                <span class="material-symbols-outlined">folder</span>
+            </button>
+        </span>
+        <span matTooltip="This feature will coming soon.">
+            <button matIconButton [disabled]="true">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+        </span>
+    </div>
+    }
+
+    @if (isRecording) {
+    <div class="recording-video-info">
+        <h2 class="time-info">{{ recordingTime }}</h2>
+        <p class="size-info">{{ recordingSize }}</p>
     </div>
     }
 </div>

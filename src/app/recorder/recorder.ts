@@ -1,11 +1,11 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-recorder',
-  imports: [MatButtonModule, MatIconModule, MatSidenavModule],
+  imports: [MatButtonModule, MatIconModule, MatTooltipModule],
   templateUrl: './recorder.html',
   styleUrl: './recorder.scss',
 })
@@ -21,9 +21,23 @@ export class Recorder {
   private recordedChunks: Blob[] = [];
 
   public isRecording = false;
+  public isPaused = false;
   public videoUrl: string | null = null; // 👈 store preview URL
 
-  constructor(private cd: ChangeDetectorRef) {}
+  // Timer and video size variables.
+  public recordingTime: string = '00:00:00';
+  private startTime: number = 0;
+  private pausedTime: number = 0;
+  private pauseStart: number = 0;
+  private timerInterval: any;
+
+  public recordingSize = '0 MB';
+  private totalSize = 0;
+
+  constructor(
+    private cd: ChangeDetectorRef,
+    private zone: NgZone,
+  ) {}
 
   public async record(isStart: boolean) {
     if (isStart) {
@@ -64,29 +78,40 @@ export class Recorder {
       this.mediaRecorder = new MediaRecorder(combinedStream);
 
       this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
-        if (event.data.size > 0) {
-          this.recordedChunks.push(event.data);
-        }
+        this.zone.run(() => {
+          if (event.data.size > 0) {
+            this.recordedChunks.push(event.data);
+
+            // ✅ Update size
+            this.totalSize += event.data.size;
+            this.recordingSize = this.formatBytes(this.totalSize);
+
+            this.cd.detectChanges();
+          }
+        });
       };
 
       this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.recordedChunks, {
-          type: 'video/webm',
+        this.zone.run(() => {
+          const blob = new Blob(this.recordedChunks, {
+            type: 'video/webm',
+          });
+
+          this.stopAll();
+
+          // 👇 create preview URL
+          this.videoUrl = URL.createObjectURL(blob);
+          // setTimeout(() => {
+          // this.isRecording = false;
+          // });
         });
-
-        this.stopAll();
-
-        // 👇 create preview URL
-        this.videoUrl = URL.createObjectURL(blob);
-        // setTimeout(() => {
-        // this.isRecording = false;
-        // });
-        this.cd.detectChanges();
       };
 
-      this.isRecording = true;
-      this.mediaRecorder.start();
-      this.cd.detectChanges();
+      this.zone.run(() => {
+        this.isRecording = true;
+        this.mediaRecorder.start(1000);
+        this.startTimer();
+      });
     }
 
     if (!isStart) {
@@ -95,19 +120,20 @@ export class Recorder {
         this.isRecording = false;
       }
     }
-    this.cd.detectChanges();
   }
 
-  public isPaused = false;
   public togglePauseRecord() {
     if (!this.mediaRecorder) return;
 
     if (this.isPaused) {
       this.mediaRecorder.resume();
       this.isPaused = false;
+
+      this.pausedTime += Date.now() - this.pauseStart;
     } else {
       this.mediaRecorder.pause();
       this.isPaused = true;
+      this.pauseStart = Date.now();
     }
 
     this.cd.detectChanges();
@@ -125,9 +151,26 @@ export class Recorder {
     // ✅ Stop screen sharing
     this.screenStream?.getTracks().forEach((track) => track.stop());
 
-    // Reset
+    // Reset All
+    // Streams
     this.userStream = null;
     this.screenStream = null;
+
+    // Basic Record
+    this.isPaused = false;
+    this.isRecording = false;
+
+    // Timer
+    clearInterval(this.timerInterval);
+    this.recordingTime = '00:00:00';
+    this.startTime = 0;
+    this.pausedTime = 0;
+    this.pauseStart = 0;
+    this.timerInterval = null;
+
+    // Video Size
+    this.recordingSize = '0 MB';
+    this.totalSize = 0;
   }
 
   // Get Streams methods
@@ -169,5 +212,41 @@ export class Recorder {
       this.isRecording = false;
       this.cd.detectChanges();
     };
+  }
+
+  // Timer methods
+  private startTimer() {
+    this.startTime = Date.now();
+
+    this.timerInterval = setInterval(() => {
+      this.zone.run(() => {
+        if (this.isPaused) return;
+
+        const now = Date.now();
+        const effectiveTime = now - this.startTime - this.pausedTime;
+
+        const hrs = Math.floor(effectiveTime / 3600000);
+        const mins = Math.floor((effectiveTime % 3600000) / 60000);
+        const secs = Math.floor((effectiveTime % 60000) / 1000);
+
+        this.recordingTime = `${this.pad(hrs)}:${this.pad(mins)}:${this.pad(secs)}`;
+
+        this.cd.detectChanges();
+      });
+    }, 1000);
+  }
+
+  private pad(n: number): string {
+    return n.toString().padStart(2, '0');
+  }
+
+  private formatBytes(bytes: number): string {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Byte';
+
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const value = bytes / Math.pow(1024, i);
+
+    return `${value.toFixed(2)} ${sizes[i]}`;
   }
 }

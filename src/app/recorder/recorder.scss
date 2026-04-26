@@ -7,7 +7,22 @@
         border-right: 1px solid lightgray;
     }
 
+    .recording-video-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding-inline: 10px;
 
+        .time-info,
+        .size-info {
+            margin: 0;
+        }
+
+        .time-info {
+            font-weight: 500;
+        }
+    }
 
 
     .off {
