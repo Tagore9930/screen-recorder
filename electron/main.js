@@ -20,6 +20,16 @@ function createWindow() {
     }
   });
 
+  // Desktop desktopCapturer
+  session.defaultSession.setDisplayMediaRequestHandler(
+    (request, callback) => {
+      desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+        callback({ video: sources[0], audio: 'loopback' });
+      });
+    },
+    { useSystemPicker: true },
+  );
+
   mainWindow = new BrowserWindow({
     width: 350,
     height: 125,
