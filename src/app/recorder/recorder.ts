@@ -27,6 +27,15 @@ export class Recorder {
 
   public async record(isStart: boolean) {
     if (isStart) {
+      if (!this.screenStream) {
+        await this.getScreenStream();
+
+        if (!this.screenStream) {
+          console.log('The userStream is empty.');
+          return;
+        }
+      }
+
       if (this.isAudio || this.isVideo) {
         await this.getUserStream();
 
@@ -35,15 +44,6 @@ export class Recorder {
           return;
         }
       }
-
-      // if (!this.screenStream) {
-      await this.getScreenStream();
-
-      if (!this.screenStream) {
-        console.log('The userStream is empty.');
-        return;
-      }
-      // }
 
       let tracks: MediaStreamTrack[] = [...this.screenStream.getVideoTracks()]; // screen
 
@@ -74,7 +74,7 @@ export class Recorder {
           type: 'video/webm',
         });
 
-        this.stopStreams();
+        this.stopAll();
 
         // 👇 create preview URL
         this.videoUrl = URL.createObjectURL(blob);
@@ -91,11 +91,11 @@ export class Recorder {
 
     if (!isStart) {
       if (this.mediaRecorder && this.isRecording) {
-        this.mediaRecorder.stop();
-        this.stopStreams();
+        this.stopAll();
         this.isRecording = false;
       }
     }
+    this.cd.detectChanges();
   }
 
   public isPaused = false;
@@ -113,15 +113,24 @@ export class Recorder {
     this.cd.detectChanges();
   }
 
-  private stopStreams() {
+  private stopAll() {
+    // Stop recorder safely
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+
     // ✅ Stop mic + camera
     this.userStream?.getTracks().forEach((track) => track.stop());
 
     // ✅ Stop screen sharing
     this.screenStream?.getTracks().forEach((track) => track.stop());
+
+    // Reset
+    this.userStream = null;
+    this.screenStream = null;
   }
 
-  // Bring Streams methods
+  // Get Streams methods
   private async getUserStream() {
     // 🎙️ Microphone + 🎥 Video.
     this.userStream = await navigator.mediaDevices.getUserMedia({
@@ -146,5 +155,19 @@ export class Recorder {
       alert('The user permissions is not allowed.');
       console.error('The user permissions is not allowed.');
     }
+
+    // ✅ IMPORTANT: detect when user stops sharing
+    const videoTrack = this.screenStream.getVideoTracks()[0];
+
+    videoTrack.onended = () => {
+      console.log('Screen sharing stopped by user');
+
+      // ✅ Stop everything (mic + camera + screen)
+      this.stopAll();
+
+      // ✅ Update UI state
+      this.isRecording = false;
+      this.cd.detectChanges();
+    };
   }
 }
